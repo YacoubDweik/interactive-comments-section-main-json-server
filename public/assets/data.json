@@ -48,6 +48,28 @@
           }
         }
       ]
+    },
+    {
+      "id": 5,
+      "content": "Wassup, can a loc come up in your crib?",
+      "createdAt": "1 month ago",
+      "score": 12,
+      "user": {
+        "image": "/assets/images/avatars/Lamar.jpg",
+        "username": "Lamar Davis"
+      },
+      "replies": []
+    },
+    {
+      "id": 6,
+      "content": "Man fuck you, I'll see you at work.",
+      "createdAt": "1 month ago",
+      "score": 12,
+      "user": {
+        "image": "/assets/images/avatars/Franklin.png",
+        "username": "Franklin Clinton"
+      },
+      "replies": []
     }
   ]
 }

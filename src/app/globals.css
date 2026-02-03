@@ -333,17 +333,24 @@ main {
   gap: 1rem;
   background-color: var(--neutral-grey-50);
   color: var(--primary-purple-600);
-  padding: 1rem;
+  padding: 1rem 0;
   border-radius: 0.5rem;
   font-size: 1.125rem;
   height: fit-content;
   width: 2.6rem;
-
+  justify-items: center;
   grid-area: score;
 }
 
+.score button {
+  padding: 0.125rem;
+}
+
+button.disabled {
+  cursor: not-allowed;
+}
+
 .score svg {
-  cursor: pointer;
   justify-self: center;
 }
 
@@ -351,7 +358,7 @@ main {
   transition: var(--smoothness);
 }
 
-.score svg:hover path {
+.score button:not(.disabled):hover svg path {
   fill: var(--primary-purple-600);
 }
 
@@ -400,7 +407,6 @@ main {
   cursor: pointer;
   transition: var(--smoothness);
   white-space: nowrap;
-
   grid-area: reply;
 }
 
@@ -560,4 +566,8 @@ main {
 
 .confirm {
   background-color: var(--primary-pink-400);
+}
+
+textarea + button {
+  align-self: center;
 }

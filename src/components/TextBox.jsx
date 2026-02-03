@@ -1,4 +1,4 @@
-function AddComment({ currentUser }) {
+function TextBox({ currentUser, content, type }) {
   const { username, image } = currentUser;
   return (
     <div className="input-field-you">
@@ -7,10 +7,12 @@ function AddComment({ currentUser }) {
         className="input-textarea"
         placeholder="Add a comment..."
         id="inputTextarea"
-        name="inputTextarea"></textarea>
-      <button className="button">Send</button>
+        name="inputTextarea"
+        value={content}
+        readOnly></textarea>
+      <button className="button">{type == "edit" ? "update" : "Send"}</button>
     </div>
   );
 }
 
-export default AddComment;
+export default TextBox;
