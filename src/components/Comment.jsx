@@ -4,42 +4,57 @@ import { useState } from "react";
 import Reply from "./Reply";
 import TextBox from "./TextBox";
 
-function Comment({
-  commentData,
-  currentUser,
-  isYou,
-  handleDeleteClick,
-  handleDownvoteClick,
-  handleUpvoteClick,
-  handleEditClick,
-  handleReplyClick,
-}) {
-  const { content, createdAt, score, user, replies, id } = commentData;
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [scoreState, setScoreState] = useState(score);
-  const isScoreSet = scoreState > score ? true : false;
+function Comment({ commentData, currentUser, onUpdate }) {
+  const { id, content, createdAt, score, user, replies } = commentData;
+  const isYou = user.username == currentUser.username;
+  const [isScoreSet, setIsScoreSet] = useState(false);
+  const [isReplyBoxExpanded, setIsReplyBoxExpanded] = useState(false);
   const [isEditClicked, setIsEditClicked] = useState(false);
-
-  function handleReply() {
-    setIsExpanded((prev) => !prev);
-    // Update db
-    handleReplyClick(id);
-  }
 
   function handleUpvote() {
     if (isScoreSet) return;
-    const newScore = scoreState + 1;
-    setScoreState(newScore);
+    const newScore = score + 1;
+    setIsScoreSet(true);
     // Update db
-    handleUpvoteClick(id, newScore);
+    onUpdate(id, "upvote", newScore, "comment");
   }
 
   function handleDownvote() {
     if (!isScoreSet) return;
-    const newScore = scoreState - 1;
-    setScoreState(newScore);
+    const newScore = score - 1;
+    setIsScoreSet(false);
     // Update db
-    handleDownvoteClick(id, newScore);
+    onUpdate(id, "downvote", newScore, "comment");
+  }
+
+  function handleReplyClick() {
+    // Show the Text Box when the user clicks on the reply btn
+    setIsReplyBoxExpanded((prev) => !prev);
+  }
+
+  function handleReplySubmission(updatedContent) {
+    // Hide the Text Box
+    setIsReplyBoxExpanded(false);
+    // Send the data when the user sumbits the Text Box btn
+    // Update db
+    onUpdate(id, "reply", updatedContent, "comment");
+  }
+
+  function handleDeleteClick(id, type) {
+    onUpdate(id, "delete", type, "comment");
+  }
+
+  function handleEditClick() {
+    // Show the Text Box when the user clicks on the edit btn
+    setIsEditClicked((prev) => !prev);
+  }
+
+  function handleEditSubmission(updatedContent) {
+    // Hide the Text Box
+    setIsEditClicked(false);
+    // Send the data when the user sumbits the Text Box btn
+    // Update db
+    onUpdate(id, "edit", updatedContent, "comment");
   }
 
   return (
@@ -81,7 +96,7 @@ function Comment({
         </div>
 
         {!isYou && (
-          <button className="reply-button" onClick={handleReply}>
+          <button className="reply-button" onClick={handleReplyClick}>
             <img src="/assets/images/icon-reply.svg" alt="" />
             <span>Reply</span>
           </button>
@@ -89,10 +104,10 @@ function Comment({
 
         {isYou && (
           <div className="reply-buttons">
-            <button className="reply-button delete" onClick={() => handleDeleteClick(id)}>
+            <button className="reply-button delete" onClick={() => handleDeleteClick(id, "comment")}>
               <img src="/assets/images/icon-delete.svg" alt="" /> Delete
             </button>
-            <button className="reply-button edit" onClick={() => handleEditClick(id)}>
+            <button className="reply-button edit" onClick={() => handleEditClick(id, "comment")}>
               <img src="/assets/images/icon-edit.svg" alt="" /> Edit
             </button>
           </div>
@@ -100,20 +115,18 @@ function Comment({
 
         <div className="content">
           {!isEditClicked && <p>{content}</p>}
-          {isEditClicked && <TextBox currentUser={currentUser} content={content} type={"edit"} />}
+          {isEditClicked && (
+            <TextBox currentUser={currentUser} content={content} type="edit" onSend={handleEditSubmission} />
+          )}
         </div>
       </div>
-      {isExpanded && <TextBox currentUser={currentUser} />}
+
+      {/* Show the Text Box when the user clicks on reply btn */}
+      {isReplyBoxExpanded && <TextBox currentUser={currentUser} onSend={handleReplySubmission} />}
+
+      {/* Render Replies */}
       {replies.map((reply) => (
-        <Reply
-          key={reply.id}
-          replyData={reply}
-          currentUser={currentUser}
-          isYou={reply.user.username == currentUser.username}
-          handleReplyClick={handleReplyClick}
-          handleDeleteClick={handleDeleteClick}
-          handleEditClick={handleEditClick}
-        />
+        <Reply key={reply.id} replyData={reply} currentUser={currentUser} onUpdate={onUpdate} />
       ))}
     </article>
   );

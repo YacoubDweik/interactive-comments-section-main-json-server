@@ -69,7 +69,30 @@
         "image": "/assets/images/avatars/Franklin.png",
         "username": "Franklin Clinton"
       },
-      "replies": []
+      "replies": [
+        {
+          "id": 7,
+          "content": "Ah, nigga, don't hate me 'cause I'm beautiful, nigga Maybe if you got rid of that old yee-yee ass haircut you got you'd get some bitches on your dick Oh, better yet, maybe Tanisha'll call your dog-ass if she ever stop fuckin' with that brain surgeon or lawyer she fucking with Nigga...",
+          "createdAt": "1 week ago",
+          "score": 4,
+          "replyingTo": "Franklin Clinton",
+          "user": {
+            "image": "/assets/images/avatars/Lamar.jpg",
+            "username": "Lamar Davis"
+          }
+        },
+        {
+          "id": 8,
+          "content": "What? Hmph",
+          "createdAt": "2 days ago",
+          "score": 2,
+          "replyingTo": "Lamar Davis",
+          "user": {
+            "image": "/assets/images/avatars/Franklin.png",
+            "username": "Franklin Clinton"
+          }
+        }
+      ]
     }
   ]
 }
