@@ -3,7 +3,7 @@ export default async function getCurrentUser() {
   const res = await fetch("http://localhost:4000/currentUser");
 
   if (!res.ok) {
-    throw new Error("Failed to fetch data"); // Throwing an error is better for Next.js error boundaries
+    throw new Error("Failed to fetch data");
   }
 
   return res.json();

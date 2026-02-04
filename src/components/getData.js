@@ -5,7 +5,7 @@ export default async function getData() {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch data"); // Throwing an error is better for Next.js error boundaries
+    throw new Error("Failed to fetch data");
   }
 
   return res.json();

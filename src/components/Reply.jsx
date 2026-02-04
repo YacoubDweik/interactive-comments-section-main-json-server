@@ -7,7 +7,7 @@ function Reply({ replyData, currentUser, onUpdate }) {
   const { content, createdAt, score, user, replyingTo, id } = replyData;
   const isYou = user.username == currentUser.username;
   const [isScoreSet, setIsScoreSet] = useState(false);
-  const [isReplyBoxExpanded, setIsReplyBoxExpanded] = useState(false);
+  const [isReplyExpanded, setIsReplyExpanded] = useState(false);
   const [isEditClicked, setIsEditClicked] = useState(false);
 
   function handleUpvote() {
@@ -15,7 +15,7 @@ function Reply({ replyData, currentUser, onUpdate }) {
     const newScore = score + 1;
     setIsScoreSet(true);
     // Update db
-    onUpdate(id, "upvote", newScore, "internal reply");
+    onUpdate(id, "change score", newScore);
   }
 
   function handleDownvote() {
@@ -23,23 +23,23 @@ function Reply({ replyData, currentUser, onUpdate }) {
     const newScore = score - 1;
     setIsScoreSet(false);
     // Update db
-    onUpdate(id, "downvote", newScore, "internal reply");
+    onUpdate(id, "change score", newScore);
   }
 
   function handleReplyClick() {
     // Show the Text Box when the user clicks on the reply btn
-    setIsReplyBoxExpanded((prev) => !prev);
+    setIsReplyExpanded((prev) => !prev);
   }
 
   function handleReplySubmission(updatedContent) {
     // Hide the Text Box
-    setIsReplyBoxExpanded(false);
+    setIsReplyExpanded(false);
     // Send the data when the user submits the Text Box btn
     // Update db
-    onUpdate(id, "reply", updatedContent, "internal reply");
+    onUpdate(id, "reply", updatedContent);
   }
 
-  function handleDeleteClick(id, type) {
+  function handleDeleteClick() {
     onUpdate(id, "delete", type, "internal reply");
   }
 
@@ -51,9 +51,9 @@ function Reply({ replyData, currentUser, onUpdate }) {
   function handleEditSubmission(updatedContent) {
     // Hide the Text Box
     setIsEditClicked(false);
-    // Send the data when the user sumbits the Text Box btn
+    // Send the data when the user submits the Text Box btn
     // Update db
-    onUpdate(id, "edit", updatedContent, "internal reply");
+    onUpdate(id, "edit", updatedContent);
   }
 
   return (
@@ -131,7 +131,7 @@ function Reply({ replyData, currentUser, onUpdate }) {
             )}
           </div>
         </div>
-        {isReplyBoxExpanded && <TextBox currentUser={currentUser} onSend={handleReplySubmission} />}
+        {isReplyExpanded && <TextBox currentUser={currentUser} onSend={handleReplySubmission} />}
       </div>
     </div>
   );

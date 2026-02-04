@@ -16,7 +16,7 @@ function Comment({ commentData, currentUser, onUpdate }) {
     const newScore = score + 1;
     setIsScoreSet(true);
     // Update db
-    onUpdate(id, "upvote", newScore, "comment");
+    onUpdate(id, "change score", newScore);
   }
 
   function handleDownvote() {
@@ -24,7 +24,7 @@ function Comment({ commentData, currentUser, onUpdate }) {
     const newScore = score - 1;
     setIsScoreSet(false);
     // Update db
-    onUpdate(id, "downvote", newScore, "comment");
+    onUpdate(id, "change score", newScore);
   }
 
   function handleReplyClick() {
@@ -35,13 +35,13 @@ function Comment({ commentData, currentUser, onUpdate }) {
   function handleReplySubmission(updatedContent) {
     // Hide the Text Box
     setIsReplyBoxExpanded(false);
-    // Send the data when the user sumbits the Text Box btn
+    // Send the data when the user submits the Text Box btn
     // Update db
-    onUpdate(id, "reply", updatedContent, "comment");
+    onUpdate(id, "reply", updatedContent);
   }
 
-  function handleDeleteClick(id, type) {
-    onUpdate(id, "delete", type, "comment");
+  function handleDeleteClick() {
+    onUpdate(id, "delete");
   }
 
   function handleEditClick() {
@@ -52,9 +52,9 @@ function Comment({ commentData, currentUser, onUpdate }) {
   function handleEditSubmission(updatedContent) {
     // Hide the Text Box
     setIsEditClicked(false);
-    // Send the data when the user sumbits the Text Box btn
+    // Send the data when the user submits the Text Box btn
     // Update db
-    onUpdate(id, "edit", updatedContent, "comment");
+    onUpdate(id, "edit", updatedContent);
   }
 
   return (

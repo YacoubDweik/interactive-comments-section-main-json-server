@@ -5,220 +5,133 @@ import CommentsList from "./CommentsList";
 import TextBox from "./TextBox";
 
 export default function App(props) {
-  const [data, setData] = useState(props.initialComments);
+  const [comments, setComments] = useState(props.comments);
 
-  // Function to update data state:
-  function handleUpdate(id, action, body, component) {
-    if (component == "comment") {
-      if (action == "reply") {
-        // Handle the click of reply button
-        // 1. Find the target comment to get the username we are replying to
-        const targetComment = data.find((comment) => comment.id === id);
-        if (!targetComment) return;
+  const createComment = (body) => ({
+    id: Date.now(),
+    content: body,
+    createdAt: "Just now",
+    score: 0,
+    user: props.currentUser,
+    replies: [],
+  });
 
-        // 2. Create the new reply object following your schema
-        const newReply = {
-          id: Date.now(), // Temporary unique ID
-          content: body,
-          createdAt: "Just now", // Static for now
-          score: 0,
-          replyingTo: targetComment.user.username,
-          user: props.currentUser, // Ensure 'currentUser' is available in this scope
-        };
+  const createReply = (body, replyingTo) => ({
+    id: Date.now(),
+    content: body,
+    createdAt: "Just now",
+    score: 0,
+    replyingTo,
+    user: props.currentUser,
+  });
 
-        // 3. Update the state
-        const updatedComments = data.map((comment) => {
-          if (comment.id === id) {
-            return {
-              ...comment,
-              // Append the new reply to the end of the existing replies array
-              replies: [...comment.replies, newReply],
-            };
-          }
-          return comment;
-        });
-
-        setData(updatedComments);
-        // send to db logic here..
-      } else if (action == "upvote") {
-        // Handle the click of upvote button
-        const newScore = body;
-        const updatedComments = data.map((comment) => (comment.id == id ? { ...comment, score: newScore } : comment));
-        setData(updatedComments);
-        // send the new score to the db
-      } else if (action == "downvote") {
-        // Handle the click of downvote button
-        const newScore = body;
-        const updatedComments = data.map((comment) => (comment.id == id ? { ...comment, score: newScore } : comment));
-        setData(updatedComments);
-        // send the new score to the db
-      } else if (action == "delete") {
-        // Handle the click of Delete button
-        // Delete the comment/reply by filtering the array and find it
-        if (body == "comment") {
-          const updatedData = data.filter((comment) => comment.id !== id);
-          setData(updatedData);
-        } else if (body === "reply") {
-          const updatedData = data.map((comment) => {
-            return {
-              ...comment,
-              // Filter out the reply with the matching ID from the replies array
-              replies: comment.replies.filter((reply) => reply.id !== id),
-            };
-          });
-          setData(updatedData);
+  // Function to update comments state:
+  function handleUpdate(targetId, action, body) {
+    // Action 1: Reply - Handle the click of the reply button
+    if (action == "reply") {
+      const updatedComments = comments.map((comment) => {
+        // Case 1: replying to a comment
+        if (comment.id === targetId) {
+          const targetComment = comment;
+          return {
+            ...comment,
+            replies: [...comment.replies, createReply(body, targetComment.user.username)],
+          };
         }
-        // Send the edited version to the db
-      } else if (action == "edit") {
-        // Handle the click of edit button
-        // Edit the reply
-        const newContent = body;
-        const updatedComments = data.map((comment) =>
-          comment.id == id ? { ...comment, content: newContent } : comment,
+        // Case 2: replying to a reply
+        const targetReply = comment.replies.find((reply) => reply.id == targetId);
+        if (targetReply) {
+          return {
+            ...comment,
+            replies: [...comment.replies, createReply(body, targetReply.user.username)],
+          };
+        }
+        return comment;
+      });
+      // Update the comments state
+      setComments(updatedComments);
+      // Send to db logic here..
+    }
+
+    // Action 2: Change score - Handle the click of the score buttons
+    if (action == "change score") {
+      const newScore = body;
+      const updatedComments = comments.map((comment) => {
+        // Case 1: comment score click
+        if (comment.id == targetId) {
+          return {
+            ...comment,
+            score: newScore,
+          };
+        }
+        // Case 2: reply score click
+        const updatedReplies = comment.replies.map((reply) =>
+          reply.id == targetId ? { ...reply, score: newScore } : reply,
         );
-        setData(updatedComments);
-        // Send the edited version to the db
-      }
-    }
-    if (component == "internal reply") {
-      if (action == "reply") {
-        // Handle the click of reply button
-        let targetUsername = "";
-        let parentCommentId = null;
-
-        // 1. Find the target user and the parent comment ID
-        data.forEach((comment) => {
-          // Is the target the main comment?
-          if (comment.id == id) {
-            targetUsername = comment.user.username;
-            parentCommentId = comment.id;
-          }
-          // Or is the target inside the replies?
-          const foundReply = comment.replies.find((r) => r.id == id);
-          if (foundReply) {
-            targetUsername = foundReply.user.username;
-            parentCommentId = comment.id; // We need the main comment ID to know where to push
-          }
-        });
-
-        if (!parentCommentId) return;
-
-        // 2. Create the new reply object
-        const newReply = {
-          id: Date.now(),
-          content: body,
-          createdAt: "Just now",
-          score: 0,
-          replyingTo: targetUsername,
-          user: props.currentUser,
+        return {
+          ...comment,
+          replies: updatedReplies,
         };
-
-        // 3. Update the state
-        const updatedComments = data.map((comment) => {
-          if (comment.id === parentCommentId) {
-            return {
-              ...comment,
-              replies: [...comment.replies, newReply],
-            };
-          }
-          return comment;
-        });
-
-        setData(updatedComments);
-        // send to db logic here..
-      } else if (action == "upvote") {
-        // Handle the click of upvote button
-        const newScore = body;
-        const updatedComments = data.map((comment) => {
-          // 1. Create a new version of the replies array
-          // If a reply matches the ID, update its score; otherwise, keep it as is.
-          const updatedReplies = comment.replies.map((reply) => {
-            return reply.id == id ? { ...reply, score: newScore } : reply;
-          });
-
-          // 2. Return the comment object with the potentially updated replies array
-          return {
-            ...comment,
-            replies: updatedReplies,
-          };
-        });
-        setData(updatedComments);
-        // send the new score to the db
-      } else if (action == "downvote") {
-        // Handle the click of downvote button
-        const newScore = body;
-        const updatedComments = data.map((comment) => {
-          // 1. Create a new version of the replies array
-          // If a reply matches the ID, update its score; otherwise, keep it as is.
-          const updatedReplies = comment.replies.map((reply) => {
-            return reply.id == id ? { ...reply, score: newScore } : reply;
-          });
-
-          // 2. Return the comment object with the potentially updated replies array
-          return {
-            ...comment,
-            replies: updatedReplies,
-          };
-        });
-        setData(updatedComments);
-        // send the new score to the db
-      } else if (action == "delete") {
-        // Handle the click of Delete button
-        // Delete the comment/reply by filtering the array and find it
-        if (body == "comment") {
-          const updatedData = data.filter((comment) => comment.id !== id);
-          setData(updatedData);
-        } else if (body === "reply") {
-          const updatedData = data.map((comment) => {
-            return {
-              ...comment,
-              // Filter out the reply with the matching ID from the replies array
-              replies: comment.replies.filter((reply) => reply.id !== id),
-            };
-          });
-          setData(updatedData);
-        }
-        // Send the edited version to the db
-      } else if (action == "edit") {
-        // Handle the click of edit button
-        // Edit the reply
-        const newContent = body;
-        const updatedComments = data.map((comment) => {
-          // 1. Create a new version of the replies array
-          // If a reply matches the ID, update its score; otherwise, keep it as is.
-          const updatedReplies = comment.replies.map((reply) => {
-            return reply.id == id ? { ...reply, content: newContent } : reply;
-          });
-
-          // 2. Return the comment object with the potentially updated replies array
-          return {
-            ...comment,
-            replies: updatedReplies,
-          };
-        });
-        setData(updatedComments);
-        // Send the edited version to the db
-      }
+      });
+      // Update the comments state
+      setComments(updatedComments);
+      // Send to db logic here..
     }
-    if (action === "add new comment") {
-      const newComment = {
-        id: Date.now(), // Generate unique ID
-        content: body,
-        createdAt: "Just now",
-        score: 0,
-        user: props.currentUser, // Matches the user object in your JSON
-        replies: [], // Essential: must be an empty array for future replies
-      };
 
-      // Append to the end of the existing comments
-      setData([...data, newComment]);
-      // Send the new updated comments list to the db
+    // Action 3: Delete - Handle the click of the delete button
+    if (action == "delete") {
+      const updatedComments = comments
+        .filter((comment) => comment.id != targetId) // Case 1: comment delete click
+        .map((comment) => {
+          // Case 2: reply delete click
+          const updatedReplies = comment.replies.filter((reply) => reply.id != targetId);
+          return {
+            ...comment,
+            replies: updatedReplies,
+          };
+        });
+      // Update the comments state
+      setComments(updatedComments);
+      // Send to db logic here..
+    }
+
+    // Action 4: Edit - Handle the click of the edit button
+    if (action == "edit") {
+      const newContent = body;
+      const updatedComments = comments.map((comment) => {
+        // Case 1: comment edit click
+        if (comment.id == targetId) {
+          return {
+            ...comment,
+            content: newContent,
+          };
+        }
+        // Case 2: reply edit click
+        const updatedReplies = comment.replies.map((reply) =>
+          reply.id == targetId ? { ...reply, content: newContent } : reply,
+        );
+        return {
+          ...comment,
+          replies: updatedReplies,
+        };
+      });
+      // Update the comments state
+      setComments(updatedComments);
+      // Send to db logic here..
+    }
+
+    // Action 5: Send - Handle the click of the send button to create a new comment
+    if (action === "add new comment") {
+      const newComment = createComment(body);
+      // Update the comments state
+      setComments([...comments, newComment]);
+      // Send to db logic here..
     }
   }
 
   return (
     <>
-      <CommentsList comments={data} currentUser={props.currentUser} onUpdate={handleUpdate} />
+      <CommentsList comments={comments} currentUser={props.currentUser} onUpdate={handleUpdate} />
       <TextBox currentUser={props.currentUser} type="new" onNew={handleUpdate} />
     </>
   );

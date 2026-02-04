@@ -3,11 +3,12 @@ import getCurrentUser from "@/components/getCurrentUser";
 import App from "@/components/App";
 
 export default async function Home() {
-  const comments = await getData();
+  // Fetch comments & current user from the db
+  const data = await getData();
   const currentUser = await getCurrentUser();
   return (
     <>
-      <App initialComments={comments} currentUser={currentUser} />
+      <App comments={data} currentUser={currentUser} />
     </>
   );
 }
