@@ -1,5 +1,3 @@
-"use client";
-
 import CommentElement from "./CreateElement";
 
 function CommentsList(props) {
@@ -11,7 +9,7 @@ function CommentsList(props) {
           data={comment}
           currentUser={props.currentUser}
           onUpdate={props.onUpdate}
-          type="comment" // Root level is always a comment
+          type="comment"
         />
       ))}
     </section>
