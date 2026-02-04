@@ -208,9 +208,8 @@ main {
 }
 
 .wrapper {
-  max-width: 48rem;
-  width: 100%;
-  padding: 2rem;
+  width: min(95%, 48rem);
+  margin: 2rem auto;
   display: grid;
   gap: 1.5rem;
 }
@@ -364,8 +363,9 @@ button.disabled {
 
 .user-details {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.25rem;
   min-width: 0;
 
   grid-area: userDetails;
@@ -382,6 +382,12 @@ button.disabled {
   flex-wrap: wrap;
   gap: 0.5rem;
   min-width: 0;
+}
+
+.actions-wrapper {
+  width: fit-content;
+  justify-self: end;
+  align-self: center;
 }
 
 .label {
@@ -578,4 +584,31 @@ textarea + button {
   align-items: center;
   gap: 1rem;
   width: 100%;
+}
+
+.input-field-you {
+  align-items: start;
+  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.input-field-you form {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 450px) {
+  .input-field-you {
+    flex-direction: row;
+  }
+  .input-field-you form {
+    display: flex;
+    flex-direction: row;
+  }
+  .user-details {
+    flex-direction: row;
+    gap: 1rem;
+  }
 }

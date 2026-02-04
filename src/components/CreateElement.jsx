@@ -10,6 +10,7 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
   const [isScoreSet, setIsScoreSet] = useState(false);
   const [isReplyExpanded, setIsReplyExpanded] = useState(false);
   const [isEditClicked, setIsEditClicked] = useState(false);
+  const [isDeleteClicked, setIsDeleteClicked] = useState(false);
 
   // Shared Logic
   const handleVote = (modifier) => {
@@ -22,6 +23,8 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
   const handleAction = (action, updatedContent) => {
     if (action === "reply") setIsReplyExpanded(false);
     if (action === "edit") setIsEditClicked(false);
+    if (action === "delete") setIsEditClicked(false);
+
     onUpdate(id, action, updatedContent);
   };
 
@@ -71,7 +74,7 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
               </button>
             ) : (
               <div className="reply-buttons">
-                <button className="reply-button delete" onClick={() => onUpdate(id, "delete")}>
+                <button className="reply-button delete" onClick={() => setIsDeleteClicked(true)}>
                   <img src="/assets/images/icon-delete.svg" alt="" /> Delete
                 </button>
                 <button className="reply-button edit" onClick={() => setIsEditClicked(!isEditClicked)}>
@@ -97,6 +100,23 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
               />
             )}
           </div>
+
+          {isDeleteClicked && (
+            <section className="delete-confirmation-container">
+              <div className="delete-confirmation">
+                <h2>Delete comment</h2>
+                <p>Are you sure you want to delete this comment? This will remove the comment and can't be undone.</p>
+                <div className="confirmation-buttons">
+                  <button className="cancel" onClick={() => setIsDeleteClicked(false)}>
+                    no, cancel
+                  </button>
+                  <button className="confirm" onClick={() => onUpdate(id, "delete")}>
+                    yes, delete
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
         </article>
 
         {/* 4. Sub-actions and Recursion */}
