@@ -19,10 +19,10 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
     onUpdate(id, "change score", newScore);
   };
 
-  const handleAction = (actionType, updatedContent) => {
-    if (actionType === "reply") setIsReplyExpanded(false);
-    if (actionType === "edit") setIsEditClicked(false);
-    onUpdate(id, actionType, updatedContent);
+  const handleAction = (action, updatedContent) => {
+    if (action === "reply") setIsReplyExpanded(false);
+    if (action === "edit") setIsEditClicked(false);
+    onUpdate(id, action, updatedContent);
   };
 
   return (
@@ -91,16 +91,16 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
             ) : (
               <TextBox
                 currentUser={currentUser}
-                content={replyingTo ? `@${replyingTo} ${content}` : content}
+                content={content}
                 type="edit"
-                onSend={(val) => handleAction("edit", val)}
+                onSubmit={(val) => handleAction("edit", val)}
               />
             )}
           </div>
         </article>
 
         {/* 4. Sub-actions and Recursion */}
-        {isReplyExpanded && <TextBox currentUser={currentUser} onSend={(val) => handleAction("reply", val)} />}
+        {isReplyExpanded && <TextBox currentUser={currentUser} onSubmit={(val) => handleAction("reply", val)} />}
 
         {/* This handles the "Recursive" part: Replies rendering more Replies */}
         {replies && replies.length > 0 && (

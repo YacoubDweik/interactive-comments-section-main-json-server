@@ -132,7 +132,11 @@ export default function App(props) {
   return (
     <>
       <CommentsList comments={comments} currentUser={props.currentUser} onUpdate={handleUpdate} />
-      <TextBox currentUser={props.currentUser} type="new" onNew={handleUpdate} />
+      <TextBox
+        currentUser={props.currentUser}
+        type="new"
+        onSubmit={(val) => handleUpdate(null, "add new comment", val)}
+      />
     </>
   );
 }

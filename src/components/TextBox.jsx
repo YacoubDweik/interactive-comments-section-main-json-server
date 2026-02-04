@@ -1,18 +1,14 @@
 "use client";
 
-function TextBox({ currentUser, content, type, onSend, onNew }) {
+function TextBox({ currentUser, content, type, onSubmit }) {
   const { username, image } = currentUser;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const textValue = formData.get("inputTextarea"); // Matches the 'name' attribute
+    const textValue = formData.get("inputTextarea");
     if (textValue == "") return;
-    if (onNew) {
-      onNew(null, "add new comment", textValue);
-    } else {
-      onSend(textValue);
-    }
+    onSubmit(textValue);
     e.currentTarget.reset();
   };
   return (
