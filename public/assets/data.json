@@ -21,13 +21,19 @@
       "image": "/assets/images/avatars/Trevor.jpg"
     }
   ],
-  "votes": [],
+  "votes": [
+    {
+      "id": "00ea",
+      "userId": 1,
+      "commentId": 1
+    }
+  ],
   "comments": [
     {
       "id": "1",
       "content": "You know, Franklin... people say I'm unstable. But I'm the most stable person I know. I'm always exactly who I am. It's everyone else who keeps changing.",
       "createdAt": 1759186800000,
-      "score": 0,
+      "score": 1,
       "userId": "4",
       "parentId": null,
       "replyingToUserId": null
