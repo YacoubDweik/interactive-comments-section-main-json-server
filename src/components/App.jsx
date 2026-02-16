@@ -1,142 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import CommentsList from "./CommentsList";
+// states
+import { useRouter } from "next/navigation";
+
+// components
+import Comment from "./Comment";
 import TextBox from "./TextBox";
 
-export default function App(props) {
-  const [comments, setComments] = useState(props.comments);
+// utils
+import deleteComment from "@/utils/deleteComment";
+import { createComment, postNewComment } from "@/utils/postNewComment";
+import getParentAuthor from "@/utils/getParentAuthor";
+import updateComment from "@/utils/updateComment";
 
-  const createComment = (body) => ({
-    id: Date.now(),
-    content: body,
-    createdAt: "Just now",
-    score: 0,
-    user: props.currentUser,
-    replies: [],
-  });
+export default function App({ users, comments, votes, currentUser }) {
+  const router = useRouter();
+  const rootComments = comments.filter((comment) => comment.parentId == null);
+  const allReplies = comments.filter((comment) => comment.parentId != null);
+  const userId = currentUser.id;
 
-  const createReply = (body, replyingTo) => ({
-    id: Date.now(),
-    content: body,
-    createdAt: "Just now",
-    score: 0,
-    replyingTo,
-    user: props.currentUser,
-  });
+  // Function to update the DB:
+  async function handleUpdate(targetId, action, body) {
+    // Grab the comment
+    const targetComment = comments.find((comment) => comment.id == targetId) ?? {};
+    // Check if the comment has a parent?
+    const parentComment = comments.find((comment) => comment.id == targetComment["parentId"]) ?? {};
+    const parentId = parentComment["id"] ?? targetComment["id"];
+    const replyingToUser = getParentAuthor(parentId, users, comments) ?? {};
 
-  // Function to update comments state:
-  function handleUpdate(targetId, action, body) {
     // Action 1: Reply - Handle the click of the reply button
     if (action == "reply") {
-      const updatedComments = comments.map((comment) => {
-        // Case 1: replying to a comment
-        if (comment.id === targetId) {
-          const targetComment = comment;
-          return {
-            ...comment,
-            replies: [...comment.replies, createReply(body, targetComment.user.username)],
-          };
-        }
-        // Case 2: replying to a reply
-        const targetReply = comment.replies.find((reply) => reply.id == targetId);
-        if (targetReply) {
-          return {
-            ...comment,
-            replies: [...comment.replies, createReply(body, targetReply.user.username)],
-          };
-        }
-        return comment;
-      });
-      // Update the comments state
-      setComments(updatedComments);
-      // Send to db logic here..
+      const newComment = createComment(body, userId, parentId, replyingToUser["id"]);
+      await postNewComment(newComment, userId);
     }
 
-    // Action 2: Change score - Handle the click of the score buttons
-    if (action == "change score") {
-      const newScore = body;
-      const updatedComments = comments.map((comment) => {
-        // Case 1: comment score click
-        if (comment.id == targetId) {
-          return {
-            ...comment,
-            score: newScore,
-          };
-        }
-        // Case 2: reply score click
-        const updatedReplies = comment.replies.map((reply) =>
-          reply.id == targetId ? { ...reply, score: newScore } : reply,
-        );
-        return {
-          ...comment,
-          replies: updatedReplies,
-        };
-      });
-      // Update the comments state
-      setComments(updatedComments);
-      // Send to db logic here..
+    // Action 2: vote - Handle the click of the vote buttons
+    if (action == "vote") {
+      await updateComment(targetId, userId, action, body);
     }
 
     // Action 3: Delete - Handle the click of the delete button
     if (action == "delete") {
-      const updatedComments = comments
-        .filter((comment) => comment.id != targetId) // Case 1: comment delete click
-        .map((comment) => {
-          // Case 2: reply delete click
-          const updatedReplies = comment.replies.filter((reply) => reply.id != targetId);
-          return {
-            ...comment,
-            replies: updatedReplies,
-          };
-        });
-      // Update the comments state
-      setComments(updatedComments);
-      // Send to db logic here..
+      await deleteComment(targetId, userId);
     }
 
     // Action 4: Edit - Handle the click of the edit button
     if (action == "edit") {
-      const newContent = body;
-      const updatedComments = comments.map((comment) => {
-        // Case 1: comment edit click
-        if (comment.id == targetId) {
-          return {
-            ...comment,
-            content: newContent,
-          };
-        }
-        // Case 2: reply edit click
-        const updatedReplies = comment.replies.map((reply) =>
-          reply.id == targetId ? { ...reply, content: newContent } : reply,
-        );
-        return {
-          ...comment,
-          replies: updatedReplies,
-        };
-      });
-      // Update the comments state
-      setComments(updatedComments);
-      // Send to db logic here..
+      await updateComment(targetId, userId, action, { content: body });
     }
 
     // Action 5: Send - Handle the click of the send button to create a new comment
     if (action === "add new comment") {
-      const newComment = createComment(body);
-      // Update the comments state
-      setComments([...comments, newComment]);
-      // Send to db logic here..
+      const newComment = createComment(body, userId);
+      await postNewComment(newComment, userId);
     }
+
+    router.refresh();
   }
 
   return (
     <>
-      <CommentsList comments={comments} currentUser={props.currentUser} onUpdate={handleUpdate} />
-      <TextBox
-        currentUser={props.currentUser}
-        type="new"
-        onSubmit={(val) => handleUpdate(null, "add new comment", val)}
-      />
+      {/* Comments List */}
+      <section className="comments-list">
+        {rootComments.map((comment) => (
+          <Comment
+            key={comment.id}
+            users={users}
+            votes={votes}
+            commentData={comment}
+            allReplies={allReplies}
+            currentUser={currentUser}
+            onUpdate={handleUpdate}
+          />
+        ))}
+      </section>
+
+      {/* New comment Box */}
+      <TextBox currentUser={currentUser} type="new" onSubmit={(val) => handleUpdate(null, "add new comment", val)} />
     </>
   );
 }

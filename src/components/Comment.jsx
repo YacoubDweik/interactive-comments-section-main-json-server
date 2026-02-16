@@ -1,12 +1,24 @@
 import { useState } from "react";
 import TextBox from "./TextBox";
+import { formatDistanceToNow } from "date-fns";
 
-function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
-  const { id, content, createdAt, score, user, replies, replyingTo } = data;
-  const isYou = user.username === currentUser.username;
+function Comment({ users, votes, commentData, allReplies = [], currentUser, onUpdate }) {
+  const { id, content, createdAt, score, userId, replyingToUserId } = commentData;
+  // get the user obj
+  const user = users.find((user) => user.id == userId);
+  // check is this comment for this current user?
+  const isYou = user.username == currentUser.username;
+  // check is the type of this comment using replying to
+  const type = replyingToUserId == null ? "comment" : "reply";
+  // if it's a reply then who it's replying to?
+  const replyingTo = users.find((user) => user.id == replyingToUserId);
+  // if it's a root comment then grab its replies
+  const replies = type == "comment" ? allReplies.filter((reply) => reply.parentId == id) : [];
+  // check has the current user voted for this comment before?
+  const isVoted = votes.find((vote) => vote.commentId == id && vote.userId == currentUser.id);
 
   // Shared States
-  const [isScoreSet, setIsScoreSet] = useState(false);
+  const [isScoreSet, setIsScoreSet] = useState(isVoted);
   const [isReplyExpanded, setIsReplyExpanded] = useState(false);
   const [isEditClicked, setIsEditClicked] = useState(false);
   const [isDeleteClicked, setIsDeleteClicked] = useState(false);
@@ -14,9 +26,10 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
   // Shared Logic
   const handleVote = (modifier) => {
     if ((modifier === 1 && isScoreSet) || (modifier === -1 && !isScoreSet)) return;
-    const newScore = score + modifier;
     setIsScoreSet(modifier === 1);
-    onUpdate(id, "change score", newScore);
+    // SEND THE DIRECTION, NOT THE SCORE
+    const direction = modifier === 1 ? "up" : "down";
+    onUpdate(id, "vote", direction);
   };
 
   const handleAction = (action, updatedContent) => {
@@ -62,7 +75,7 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
               <p className="username">{user.username}</p>
               {isYou && <span className="label">You</span>}
             </div>
-            <p className="time-created">{createdAt}</p>
+            <p className="time-created">{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</p>
           </div>
 
           {/* Action Buttons (Unified Logic) */}
@@ -87,7 +100,7 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
             {!isEditClicked ? (
               <p>
                 {/* 3. Check for replyingTo inside the text flow */}
-                {replyingTo && <span className="reply-username">@{replyingTo} </span>}
+                {replyingTo && <span className="reply-username">@{replyingTo.username} </span>}
                 {content}
               </p>
             ) : (
@@ -125,7 +138,14 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
         {replies && replies.length > 0 && (
           <div className="replies-wrapper">
             {replies.map((reply) => (
-              <CommentElement key={reply.id} data={reply} currentUser={currentUser} onUpdate={onUpdate} type="reply" />
+              <Comment
+                key={reply.id}
+                users={users}
+                votes={votes}
+                commentData={reply}
+                currentUser={currentUser}
+                onUpdate={onUpdate}
+              />
             ))}
           </div>
         )}
@@ -134,4 +154,4 @@ function CommentElement({ data, currentUser, onUpdate, type = "comment" }) {
   );
 }
 
-export default CommentElement;
+export default Comment;
