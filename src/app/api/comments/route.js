@@ -1,69 +1,47 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-// Function to handle GET request to show the comments
+// GET Comments from Supabase
 export async function GET() {
-  const res = await fetch("http://localhost:4000/comments");
+  const supabase = await createClient();
 
-  const comments = await res.json();
+  const { data: comments, error } = await supabase
+    .from("comments")
+    .select(
+      `id, content, createdAt:created_at, score, userId:user_id, parentId:parent_id, replyingToUserId:replying_to_user_id`,
+    )
+    .order("created_at", { ascending: true });
 
-  return NextResponse.json(comments, {
-    status: 200,
-  });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(comments, { status: 200 });
 }
 
-// Function to handle POST request to add a new comment (comment/reply)
-// This function "catches" the request from the frontend and passes it to the real API
-// Real API here is the json-server (port 4000)
+// POST new comment to Supabase
 export async function POST(request) {
-  // The frontend sent a string. This line "unpacks" that string
-  // and turns it back into a JavaScript object so we can use it.
-  // We call it 'comment' because that's what's inside the request.
-  const { comment, userId } = await request.json();
+  // 1. RECEIVE: The server gets a request object.
+  // You run .json() to parse the body text into a JavaScript object.
+  const { comment } = await request.json();
 
-  // Check the user & the comment
-  if (!comment || !userId) {
-    return NextResponse.json({ error: "Missing comment or userId" }, { status: 400 });
+  // 2. CONNECT: You create a bridge to Supabase using your API keys.
+  const supabase = await createClient();
+
+  // 3. VALIDATE (Basic): You check if the data exists.
+  if (!comment) {
+    return NextResponse.json({ error: "Missing comment data" }, { status: 400 });
   }
 
-  const userRes = await fetch(`http://localhost:4000/users/${userId}`);
-  const user = await userRes.json();
+  // 4. INSERT (The Security Hole):
+  // You take the 'comment' object EXACTLY as the frontend sent it.
+  // This object contains: { content: "yo", user_id: 1, ... }
+  const { data, error } = await supabase.from("comments").insert([comment]).select().single();
 
-  if (!user.id) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  // ... error handling and return
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // ✅ Add the userId from verified user to the comment just to be sure
-  comment.userId = user.id;
-
-  // 1. Talk to the database
-  // Now your server (the middleman) acts like a frontend and sends
-  // the same data to the actual database (json-server on port 4000).
-  const res = await fetch("http://localhost:4000/comments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    // We turn it back into a string to send it to the database
-    body: JSON.stringify(comment),
-  });
-
-  // 2. CHECK: Did the database actually save it?
-  if (!res.ok) {
-    // If NOT okay, tell the frontend immediately
-    return NextResponse.json(
-      { error: "Database failed to save comment" },
-      {
-        status: res.status, // Send the real error code (e.g., 500 or 404)
-      },
-    );
-  }
-
-  // 3. If we got here, everything is fine!
-  // The real database or API here (port 4000) says "Done! I saved it and gave it ID: 99."
-  // This line catches that confirmation and turns it into a JS object.
-  const newComment = await res.json();
-
-  // Finally, your server (the middleman) sends that confirmed comment (with the ID)
-  // back to your Frontend (page.jsx).
-  return NextResponse.json(newComment, {
-    status: 201,
-  });
+  return NextResponse.json(data, { status: 201 });
 }

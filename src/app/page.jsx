@@ -1,48 +1,29 @@
 import App from "@/components/App";
+import { createClient } from "@/utils/supabase/server";
 
 // Stop caching
 export const dynamic = "force-dynamic";
 
-// Function to call the route handler of users
-async function getUsers() {
-  const res = await fetch("http://localhost:3000/api/users");
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch users");
-  }
-
-  return res.json();
-}
-
-// Function to call the route handler of comments
-async function getComments() {
-  const res = await fetch("http://localhost:3000/api/comments");
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch comments");
-  }
-
-  return res.json();
-}
-
-// Function to call the route handler of votes
-async function getVotes() {
-  const res = await fetch("http://localhost:3000/api/votes");
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch votes");
-  }
-
-  return res.json();
-}
-
 export default async function Home() {
-  // Fetch users, comments, votes & current user from the db
-  const users = await getUsers();
-  const comments = await getComments();
-  const votes = await getVotes();
-  // For now the current user will be Franklin until we use Supabase Auth
-  const currentUser = users.find((user) => (user.username = "Franklin Clinton"));
+  const supabase = await createClient();
+
+  const [usersRes, commentsRes, votesRes] = await Promise.all([
+    supabase.from("users").select(),
+    supabase
+      .from("comments")
+      .select(
+        `id, content, createdAt:created_at, score, userId:user_id, parentId:parent_id, replyingToUserId:replying_to_user_id`,
+      )
+      .order("created_at", { ascending: true }),
+    supabase.from("votes").select(`id, userId:user_id, commentId:comment_id`),
+  ]);
+
+  const users = usersRes.data || [];
+  const comments = commentsRes.data || [];
+  const votes = votesRes.data || [];
+
+  // Now I am setting the user manually but later I will use Supabase auth system
+  const currentUser = users.find((user) => user.username === "Franklin Clinton");
   return (
     <>
       <App users={users} comments={comments} votes={votes} currentUser={currentUser} />

@@ -1,123 +1,139 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
 // Function to handle PATCH request to change score or edit content
-export async function PATCH(req, { params }) {
-  const { id } = await params;
-  const { action, payload, userId } = await req.json();
+export async function PATCH(request, { params }) {
+  const { id } = await params; // The Comment ID from the URL
+  const { action, payload, userId } = await request.json();
+  const supabase = await createClient();
 
   const commentId = Number(id);
-  const voterId = Number(userId);
 
   if (action === "vote") {
-    const voteCheckRes = await fetch(`http://localhost:4000/votes?userId=${voterId}&commentId=${commentId}`);
+    // 1. CHECK: Does a vote already exist for this user & comment?
+    const { data: existingVote } = await supabase
+      .from("votes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("comment_id", commentId)
+      .maybeSingle(); // Returns the object if found, or null if not.
 
-    const existingVotes = await voteCheckRes.json();
+    // 2. GET CURRENT SCORE: We need the current score to do the math
+    const { data: comment } = await supabase.from("comments").select("score").eq("id", commentId).single();
 
-    const commentRes = await fetch(`http://localhost:4000/comments/${commentId}`);
-    const comment = await commentRes.json();
+    let currentScore = comment?.score || 0;
 
-    let newScore = comment.score;
-
-    // ✅ USER CLICKED UP
+    // ✅ USER CLICKED UP (ADD VOTE)
     if (payload === "up") {
-      if (existingVotes.length > 0) {
-        // Already liked → DO NOTHING
+      if (existingVote) {
+        // Already voted? Do nothing, just return current state
         return NextResponse.json(comment);
       }
 
-      newScore += 1;
+      // 1. Add the vote to the 'votes' table
+      await supabase.from("votes").insert({ user_id: userId, comment_id: commentId });
 
-      await fetch(`http://localhost:4000/votes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: voterId, commentId }),
-      });
+      // 2. Update the score in 'comments' table (+1)
+      const { data: updatedComment } = await supabase
+        .from("comments")
+        .update({ score: currentScore + 1 })
+        .eq("id", commentId)
+        .select()
+        .single();
+
+      return NextResponse.json(updatedComment);
     }
 
-    // ✅ USER CLICKED DOWN
+    // ✅ USER CLICKED DOWN (REMOVE VOTE)
     if (payload === "down") {
-      if (existingVotes.length === 0) {
-        // Nothing to remove → DO NOTHING
+      if (!existingVote) {
+        // Nothing to remove? Do nothing.
         return NextResponse.json(comment);
       }
 
-      newScore -= 1;
+      // 1. Remove the vote from the 'votes' table
+      await supabase.from("votes").delete().eq("user_id", userId).eq("comment_id", commentId);
 
-      await fetch(`http://localhost:4000/votes/${existingVotes[0].id}`, {
-        method: "DELETE",
-      });
+      // 2. Update the score in 'comments' table (-1)
+      const { data: updatedComment } = await supabase
+        .from("comments")
+        .update({ score: currentScore - 1 })
+        .eq("id", commentId)
+        .select()
+        .single();
+
+      return NextResponse.json(updatedComment);
     }
-
-    const updateRes = await fetch(`http://localhost:4000/comments/${commentId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score: newScore }),
-    });
-
-    const result = await updateRes.json();
-    return NextResponse.json(result);
   }
 
+  // Handle other actions (like 'edit' content) here...
   if (action === "edit") {
-    // 1. Fetch the real comment from DB
-    const commentRes = await fetch(`http://localhost:4000/comments/${id}`);
-    const comment = await commentRes.json();
+    // 1. Fetch the comment to check ownership (The Security Gate)
+    const { data: comment, error: fetchError } = await supabase
+      .from("comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single();
 
-    if (!comment.id) {
-      return NextResponse.json({ error: "comment not found" }, { status: 404 });
+    if (fetchError || !comment) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // 2. Check ownership
-    if (comment.userId !== userId) {
-      return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+    // 2. Compare the owner with the person trying to edit
+    if (comment.user_id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 3. Edit
-    const res = await fetch(`http://localhost:4000/comments/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Database failed to save comment" },
-        {
-          status: res.status,
-        },
-      );
+    // 3. Update the content
+    // We use payload.content because you send { content: body } from the frontend
+    const { data: updatedComment, error: updateError } = await supabase
+      .from("comments")
+      .update({ content: payload.content })
+      .eq("id", commentId)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-    const newComment = await res.json();
-    return NextResponse.json(newComment, {
-      status: 201,
-    });
+
+    return NextResponse.json(updatedComment, { status: 200 });
   }
+
+  return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 }
 
 // Function to handle DELETE request
-export async function DELETE(req, { params }) {
+export async function DELETE(request, { params }) {
   const { id } = await params;
-  const { userId } = await req.json(); // frontend sends this
 
-  // 1. Fetch the real comment from DB
-  const commentRes = await fetch(`http://localhost:4000/comments/${id}`);
-  const comment = await commentRes.json();
+  // 1. Get the userId from the request body (Just like before)
+  const { userId } = await request.json();
+  const supabase = await createClient();
 
-  if (!comment.id) {
+  // 2. Fetch the comment to see who owns it
+  // We use .single() to get just one object, not an array
+  const { data: comment, error: fetchError } = await supabase
+    .from("comments")
+    .select("user_id") // We only need the user_id to check ownership
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !comment) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
   }
 
-  // 2. Check ownership
-  if (comment.userId !== userId) {
-    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  // 3. Check Ownership (The Security Gate)
+  // strict equality check: database ID vs request ID
+  if (comment.user_id !== userId) {
+    return NextResponse.json({ error: "You are not authorized to delete this comment." }, { status: 403 });
   }
 
-  // 3. Delete
-  const res = await fetch(`http://localhost:4000/comments/${id}`, {
-    method: "DELETE",
-  });
+  // 4. Delete the comment
+  const { error: deleteError } = await supabase.from("comments").delete().eq("id", id);
 
-  if (!res.ok) {
-    return NextResponse.json({ error: "Failed to delete comment" }, { status: res.status });
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
   return NextResponse.json({ message: "Deleted successfully" }, { status: 200 });

@@ -18,7 +18,6 @@ export default function App({ users, comments, votes, currentUser }) {
   const rootComments = comments.filter((comment) => comment.parentId == null);
   const allReplies = comments.filter((comment) => comment.parentId != null);
   const userId = currentUser.id;
-
   // Function to update the DB:
   async function handleUpdate(targetId, action, body) {
     // Grab the comment
@@ -31,7 +30,7 @@ export default function App({ users, comments, votes, currentUser }) {
     // Action 1: Reply - Handle the click of the reply button
     if (action == "reply") {
       const newComment = createComment(body, userId, parentId, replyingToUser["id"]);
-      await postNewComment(newComment, userId);
+      await postNewComment(newComment);
     }
 
     // Action 2: vote - Handle the click of the vote buttons
@@ -52,7 +51,7 @@ export default function App({ users, comments, votes, currentUser }) {
     // Action 5: Send - Handle the click of the send button to create a new comment
     if (action === "add new comment") {
       const newComment = createComment(body, userId);
-      await postNewComment(newComment, userId);
+      await postNewComment(newComment);
     }
 
     router.refresh();
