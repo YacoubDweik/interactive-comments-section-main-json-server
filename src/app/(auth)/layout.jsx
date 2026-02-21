@@ -20,7 +20,7 @@ export default async function AuthLayout({ children }) {
   return (
     <main className="auth-main">
       <nav>
-        <h1>Dojo Helpdesk</h1>
+        <h1>GTA V</h1>
         <Link href="/signup">Sign up</Link>
         <Link href="/login">Login</Link>
       </nav>
