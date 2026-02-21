@@ -2,8 +2,6 @@
 - You can use these accounts (email + password are the same) or create your own one using your email:
 
 ```
-Franklin@gtav.com
-Lamar@gtav.com
 Michael@gtav.com
 Trevor@gtav.com
 ```
