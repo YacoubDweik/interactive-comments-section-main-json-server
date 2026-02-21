@@ -1,11 +1,14 @@
-export default async function deleteComment(id, userId) {
+export default async function deleteComment(id) {
   const res = await fetch(`/api/comments/${id}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId }), // <-- send current user
   });
 
-  if (!res.ok) throw new Error("Failed to delete comment");
+  const data = await res.json();
 
-  return res.json();
+  if (!res.ok) {
+    // We throw the specific error message sent from the API
+    throw new Error(data.error || "Something went wrong");
+  }
+
+  return data;
 }

@@ -28,15 +28,30 @@ export async function POST(request) {
   // 2. CONNECT: You create a bridge to Supabase using your API keys.
   const supabase = await createClient();
 
-  // 3. VALIDATE (Basic): You check if the data exists.
+  // 3. Get the secure user from the JWT cookie
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 4. VALIDATE (Basic): You check if the data exists.
   if (!comment) {
     return NextResponse.json({ error: "Missing comment data" }, { status: 400 });
   }
 
   // 4. INSERT (The Security Hole):
-  // You take the 'comment' object EXACTLY as the frontend sent it.
+  // Before You took the 'comment' object EXACTLY as the frontend sent it.
   // This object contains: { content: "yo", user_id: 1, ... }
-  const { data, error } = await supabase.from("comments").insert([comment]).select().single();
+  // But now we only take the content after we grabbed user_id from the db
+  const { data, error } = await supabase
+    .from("comments")
+    .insert([{ ...comment, user_id: user.id }]) // THE SOURCE OF TRUTH
+    .select()
+    .single();
 
   // ... error handling and return
   if (error) {

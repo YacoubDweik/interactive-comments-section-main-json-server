@@ -4,23 +4,33 @@ import { createClient } from "@/utils/supabase/server";
 // Function to handle PATCH request to change score or edit content
 export async function PATCH(request, { params }) {
   const { id } = await params; // The Comment ID from the URL
-  const { action, payload, userId } = await request.json();
+  const { action, payload } = await request.json();
   const supabase = await createClient();
 
+  // 0. SECURE GATE: Get the real user from the session
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const commentId = Number(id);
+  const secureUserId = user.id; // This is our source of truth
 
   if (action === "vote") {
     // 1. CHECK: Does a vote already exist for this user & comment?
     const { data: existingVote } = await supabase
       .from("votes")
       .select("id")
-      .eq("user_id", userId)
+      .eq("user_id", secureUserId)
       .eq("comment_id", commentId)
       .maybeSingle(); // Returns the object if found, or null if not.
 
     // 2. GET CURRENT SCORE: We need the current score to do the math
     const { data: comment } = await supabase.from("comments").select("score").eq("id", commentId).single();
-
     let currentScore = comment?.score || 0;
 
     // ✅ USER CLICKED UP (ADD VOTE)
@@ -31,7 +41,7 @@ export async function PATCH(request, { params }) {
       }
 
       // 1. Add the vote to the 'votes' table
-      await supabase.from("votes").insert({ user_id: userId, comment_id: commentId });
+      await supabase.from("votes").insert({ user_id: secureUserId, comment_id: commentId });
 
       // 2. Update the score in 'comments' table (+1)
       const { data: updatedComment } = await supabase
@@ -52,7 +62,7 @@ export async function PATCH(request, { params }) {
       }
 
       // 1. Remove the vote from the 'votes' table
-      await supabase.from("votes").delete().eq("user_id", userId).eq("comment_id", commentId);
+      await supabase.from("votes").delete().eq("user_id", secureUserId).eq("comment_id", commentId);
 
       // 2. Update the score in 'comments' table (-1)
       const { data: updatedComment } = await supabase
@@ -80,7 +90,7 @@ export async function PATCH(request, { params }) {
     }
 
     // 2. Compare the owner with the person trying to edit
-    if (comment.user_id !== userId) {
+    if (comment.user_id !== secureUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -104,12 +114,21 @@ export async function PATCH(request, { params }) {
 }
 
 // Function to handle DELETE request
-export async function DELETE(request, { params }) {
+export async function DELETE(_, { params }) {
   const { id } = await params;
-
-  // 1. Get the userId from the request body (Just like before)
-  const { userId } = await request.json();
   const supabase = await createClient();
+
+  // 1. SECURE GATE: Get the real user from the session
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const secureUserId = user.id; // This is our source of truth
 
   // 2. Fetch the comment to see who owns it
   // We use .single() to get just one object, not an array
@@ -123,9 +142,8 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
   }
 
-  // 3. Check Ownership (The Security Gate)
-  // strict equality check: database ID vs request ID
-  if (comment.user_id !== userId) {
+  // 3. Check Ownership
+  if (comment.user_id !== secureUserId) {
     return NextResponse.json({ error: "You are not authorized to delete this comment." }, { status: 403 });
   }
 

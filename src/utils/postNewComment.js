@@ -1,7 +1,6 @@
 // No more id or createdAt!
-export const createComment = (body, userId, parentId = null, replyingToUserId = null) => ({
+export const createComment = (body, parentId = null, replyingToUserId = null) => ({
   content: body,
-  user_id: userId,
   parent_id: parentId,
   replying_to_user_id: replyingToUserId,
   score: 0,

@@ -29,28 +29,28 @@ export default function App({ users, comments, votes, currentUser }) {
 
     // Action 1: Reply - Handle the click of the reply button
     if (action == "reply") {
-      const newComment = createComment(body, userId, parentId, replyingToUser["id"]);
+      const newComment = createComment(body, parentId, replyingToUser["id"]);
       await postNewComment(newComment);
     }
 
     // Action 2: vote - Handle the click of the vote buttons
     if (action == "vote") {
-      await updateComment(targetId, userId, action, body);
+      await updateComment(targetId, action, body);
     }
 
     // Action 3: Delete - Handle the click of the delete button
     if (action == "delete") {
-      await deleteComment(targetId, userId);
+      await deleteComment(targetId);
     }
 
     // Action 4: Edit - Handle the click of the edit button
     if (action == "edit") {
-      await updateComment(targetId, userId, action, { content: body });
+      await updateComment(targetId, action, { content: body });
     }
 
     // Action 5: Send - Handle the click of the send button to create a new comment
     if (action === "add new comment") {
-      const newComment = createComment(body, userId);
+      const newComment = createComment(body);
       await postNewComment(newComment);
     }
 

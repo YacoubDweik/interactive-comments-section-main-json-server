@@ -75,7 +75,9 @@ function Comment({ users, votes, commentData, allReplies = [], currentUser, onUp
               <p className="username">{user.username}</p>
               {isYou && <span className="label">You</span>}
             </div>
-            <p className="time-created">{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</p>
+            <p className="time-created" suppressHydrationWarning>
+              {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+            </p>
           </div>
 
           {/* Action Buttons (Unified Logic) */}
