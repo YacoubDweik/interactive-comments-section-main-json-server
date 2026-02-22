@@ -25,7 +25,7 @@ export default function App({ users, comments, votes, currentUser }) {
     // Check if the comment has a parent?
     const parentComment = comments.find((comment) => comment.id == targetComment["parentId"]) ?? {};
     const parentId = parentComment["id"] ?? targetComment["id"];
-    const replyingToUser = getParentAuthor(parentId, users, comments) ?? {};
+    const replyingToUser = getParentAuthor(targetId, users, comments) ?? {};
 
     // Action 1: Reply - Handle the click of the reply button
     if (action == "reply") {
