@@ -10,7 +10,7 @@ import TextBox from "./TextBox";
 // utils
 import deleteComment from "@/utils/deleteComment";
 import { createComment, postNewComment } from "@/utils/postNewComment";
-import getParentAuthor from "@/utils/getParentAuthor";
+import getTargetAuthor from "@/utils/getTargetAuthor";
 import updateComment from "@/utils/updateComment";
 
 export default function App({ users, comments, votes, currentUser }) {
@@ -25,7 +25,7 @@ export default function App({ users, comments, votes, currentUser }) {
     // Check if the comment has a parent?
     const parentComment = comments.find((comment) => comment.id == targetComment["parentId"]) ?? {};
     const parentId = parentComment["id"] ?? targetComment["id"];
-    const replyingToUser = getParentAuthor(targetId, users, comments) ?? {};
+    const replyingToUser = getTargetAuthor(targetId, users, comments) ?? {};
 
     // Action 1: Reply - Handle the click of the reply button
     if (action == "reply") {
