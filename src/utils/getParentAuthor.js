@@ -1,15 +1,15 @@
-const getParentAuthor = (parentId, users, comments) => {
-  if (!parentId) return null;
+const getTargetAuthor = (targetId, users, comments) => {
+  if (!targetId) return null;
 
-  // 1. Find the parent comment object
-  const parentComment = comments.find((c) => c.id === parentId);
+  // 1. Find the target comment object
+  const targetComment = comments.find((c) => c.id === targetId);
 
-  if (!parentComment) return null;
+  if (!targetComment) return null;
 
-  // 2. Use the userId from that parent to find the user in the users array
-  const parentAuthor = users.find((u) => u.id === parentComment.userId);
+  // 2. Use the userId from that target to find the user in the users array
+  const targetAuthor = users.find((u) => u.id === targetComment.userId);
 
-  return parentAuthor; // This is the full {id, username, image} object
+  return targetAuthor; // This is the full {id, username, image} object
 };
 
-export default getParentAuthor;
+export default getTargetAuthor;
